@@ -163,10 +163,11 @@ export class Room {
 
   updateConfig(partial: Partial<RoomConfig>) {
     this.config = { ...this.config, ...partial };
-    const n = Math.max(1, this.displays.size || 1);
-    this.config.allyCount = clamp(this.config.allyCount, 0, n);
+    // Do NOT clamp allyCount to current display count — that silently forced
+    // allyCount=1 while phones were still joining, and with markedCount=1
+    // pure blue never appeared.
+    this.config.allyCount = clamp(this.config.allyCount, 0, MAX_DISPLAYS);
     if (this.config.allowMarked) {
-      // 0 可。味方全員をマークにすると青フルが一度も出ないので上限は allyCount
       this.config.markedCount = clamp(this.config.markedCount, 0, this.config.allyCount);
     } else {
       this.config.markedCount = 0;

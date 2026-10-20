@@ -260,33 +260,46 @@ export function ControllerPanel({
         {snapshot.displays.length === 0 ? (
           <p className="muted">まだDisplayがありません。QRを読み取ってください。</p>
         ) : (
-          <ul className="device-list">
-            {snapshot.displays.map((d) => (
-              <li key={d.id}>
-                <span
-                  className="swatch"
-                  style={
-                    d.state === "free"
-                      ? { background: COLORS.blue }
-                      : d.state === "enemy"
-                        ? { background: COLORS.vermilion }
-                        : {
-                            background: `linear-gradient(90deg, ${COLORS.blue} 50%, ${COLORS.vermilion} 50%)`,
-                          }
-                  }
-                />
-                <input
-                  className="label-input"
-                  value={d.label}
-                  onChange={(e) =>
-                    send({ type: "setLabel", deviceId: d.id, label: e.target.value })
-                  }
-                  placeholder="向きラベル"
-                />
-                <span className={`dot ${d.connected ? "ok" : "bad"}`} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <p className="muted">
+              いま: 青フル{" "}
+              {snapshot.displays.filter((d) => d.state === "free").length} / 半分{" "}
+              {snapshot.displays.filter((d) => d.state === "marked").length} / 敵{" "}
+              {snapshot.displays.filter((d) => d.state === "enemy").length}
+              {"  "}
+              （設定: 味方{cfg.allyCount}・半分マーク{cfg.allowMarked ? cfg.markedCount : 0}）
+            </p>
+            <ul className="device-list">
+              {snapshot.displays.map((d) => (
+                <li key={d.id}>
+                  <span
+                    className="swatch"
+                    style={
+                      d.state === "free"
+                        ? { background: COLORS.blue }
+                        : d.state === "enemy"
+                          ? { background: COLORS.vermilion }
+                          : {
+                              background: `linear-gradient(90deg, ${COLORS.blue} 50%, ${COLORS.vermilion} 50%)`,
+                            }
+                    }
+                  />
+                  <input
+                    className="label-input"
+                    value={d.label}
+                    onChange={(e) =>
+                      send({ type: "setLabel", deviceId: d.id, label: e.target.value })
+                    }
+                    placeholder="向きラベル"
+                  />
+                  <span className="state-tag">
+                    {d.state === "free" ? "青" : d.state === "marked" ? "半分" : "敵"}
+                  </span>
+                  <span className={`dot ${d.connected ? "ok" : "bad"}`} />
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </div>

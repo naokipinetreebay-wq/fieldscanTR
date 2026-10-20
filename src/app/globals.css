@@ -300,9 +300,15 @@ select {
 
 .device-list li {
   display: grid;
-  grid-template-columns: 28px 1fr 12px;
+  grid-template-columns: 28px 1fr auto 12px;
   gap: 10px;
   align-items: center;
+}
+
+.state-tag {
+  font-size: 0.75rem;
+  color: var(--muted, #666);
+  white-space: nowrap;
 }
 
 .swatch {
