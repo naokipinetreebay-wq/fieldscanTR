@@ -166,11 +166,8 @@ export class Room {
     const n = Math.max(1, this.displays.size || 1);
     this.config.allyCount = clamp(this.config.allyCount, 0, n);
     if (this.config.allowMarked) {
-      // 0 のままだとマークが一切出ない（2台でも「半分を含める」が効かない原因）
-      if (this.config.markedCount < 1 && this.config.allyCount > 0) {
-        this.config.markedCount = Math.max(1, Math.floor(this.config.allyCount / 2));
-      }
-      this.config.markedCount = clamp(this.config.markedCount, 1, this.config.allyCount);
+      // 0 可。味方全員をマークにすると青フルが一度も出ないので上限は allyCount
+      this.config.markedCount = clamp(this.config.markedCount, 0, this.config.allyCount);
     } else {
       this.config.markedCount = 0;
     }
@@ -240,6 +237,10 @@ export class Room {
     let markedCount = 0;
     if (this.config.allowMarked && allyCount > 0) {
       markedCount = clamp(this.config.markedCount, 0, allyCount);
+      // 味方2台以上なら、青フルが0台にならないようマークを1台残す
+      if (allyCount >= 2 && markedCount >= allyCount) {
+        markedCount = allyCount - 1;
+      }
     }
     const markedIds = shuffle(allies).slice(0, markedCount);
     const markedSet = new Set(markedIds);

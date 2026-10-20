@@ -100,11 +100,11 @@ export function ControllerPanel({
                 value={Math.min(cfg.allyCount, maxAlly)}
                 onChange={(e) => {
                   const allyCount = Number(e.target.value);
-                  const half = Math.max(1, Math.floor(allyCount / 2));
+                  const maxMarked = allyCount >= 2 ? allyCount - 1 : allyCount;
                   patch({
                     allyCount,
                     markedCount: cfg.allowMarked
-                      ? Math.min(Math.max(cfg.markedCount || half, 1), allyCount)
+                      ? Math.min(cfg.markedCount, maxMarked)
                       : 0,
                   });
                 }}
@@ -116,10 +116,13 @@ export function ControllerPanel({
                 checked={cfg.allowMarked}
                 onChange={(e) => {
                   const allowMarked = e.target.checked;
-                  const half = Math.max(1, Math.floor(cfg.allyCount / 2));
+                  const suggested = Math.min(
+                    Math.floor(cfg.allyCount / 2),
+                    Math.max(0, cfg.allyCount - 1)
+                  );
                   patch({
                     allowMarked,
-                    markedCount: allowMarked ? Math.max(cfg.markedCount, half) : 0,
+                    markedCount: allowMarked ? Math.max(suggested, 0) : 0,
                   });
                 }}
               />
@@ -130,14 +133,15 @@ export function ControllerPanel({
                 <span>
                   半分マークにする台数: {cfg.markedCount}
                   <small className="field-hint">
-                    味方{cfg.allyCount}台のうち、何台を左右半分表示にするか
+                    味方{cfg.allyCount}台のうち何台を半分にするか（残り
+                    {Math.max(0, cfg.allyCount - cfg.markedCount)}台が青フル）
                   </small>
                 </span>
                 <input
                   type="range"
-                  min={1}
-                  max={Math.max(1, cfg.allyCount)}
-                  value={Math.min(Math.max(cfg.markedCount, 1), cfg.allyCount)}
+                  min={0}
+                  max={Math.max(0, cfg.allyCount)}
+                  value={Math.min(Math.max(cfg.markedCount, 0), cfg.allyCount)}
                   onChange={(e) => patch({ markedCount: Number(e.target.value) })}
                 />
               </label>

@@ -66,9 +66,9 @@ export type ServerMessage =
 
 export const DEFAULT_CONFIG: RoomConfig = {
   assignMode: "allyN",
-  allyCount: 1,
+  allyCount: 2,
   allowMarked: true,
-  /** 味方のうち半分マークにする台数（allowMarked 時は 1 以上推奨） */
+  /** 味方のうち半分マークにする台数（0なら青フルのみ） */
   markedCount: 1,
   forbidZeroAlly: true,
   timingMode: "random",
