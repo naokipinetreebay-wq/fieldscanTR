@@ -14,10 +14,10 @@ const MAX_DISPLAYS = 12;
 /** Must match DisplayScreen local timings */
 const TRANSITION_LEAD_MS: Record<TransitionMode, number> = {
   instant: 0,
-  /** Remaining-seconds overlay on current color; no pre-switch lead */
+  /** Remaining-seconds / lifetime cues run on the current color */
   countdown: 0,
-  blink: 1600,
-  fade: 1200,
+  blink: 0,
+  fade: 0,
 };
 const BLACK_GAP_MS = 280;
 

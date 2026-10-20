@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { COLORS, DisplayState, RoomSnapshot, TransitionMode } from "@/lib/types";
+import { COLORS, DisplayState, RoomSnapshot } from "@/lib/types";
 
 const BLACK_MS = 280;
+const BLINK_PERIOD_MS = 280;
+/** Fade goes from full strength to this opacity by the end of the display */
+const FADE_END_OPACITY = 0.22;
 
 function stateStyle(state: DisplayState): React.CSSProperties {
   if (state === "free") return { background: COLORS.blue };
@@ -11,12 +14,6 @@ function stateStyle(state: DisplayState): React.CSSProperties {
   return {
     background: `linear-gradient(90deg, ${COLORS.blue} 50%, ${COLORS.vermilion} 50%)`,
   };
-}
-
-function leadMsFor(transition: TransitionMode): number {
-  if (transition === "blink") return 1600;
-  if (transition === "fade") return 1200;
-  return 0;
 }
 
 export function DisplayScreen({
@@ -31,8 +28,6 @@ export function DisplayScreen({
   const colorChanged = prev !== next;
   const deviceOffset = snapshot.deviceOffsets?.[deviceId] ?? 0;
 
-  // Skew is sampled only when serverNow changes — otherwise estNow freezes and
-  // staggered offsets never elapse (all devices appear to flip together).
   const skewRef = useRef(0);
   const lastServerNowRef = useRef<number | null>(null);
   if (lastServerNowRef.current !== snapshot.serverNow) {
@@ -69,45 +64,57 @@ export function DisplayScreen({
   }, []);
 
   const transition = snapshot.transition;
-  const leadMs = leadMsFor(transition);
   const roundStartedAt = snapshot.roundStartedAt ?? snapshot.transitionEndsAt ?? Date.now();
   const estNow = Date.now() + skewRef.current;
+  // Time since this device's staggered round start
   const elapsed = estNow - roundStartedAt - deviceOffset;
-  const blackEnd = leadMs + (colorChanged ? BLACK_MS : 0);
 
-  let style: React.CSSProperties = stateStyle(next);
+  let fillStyle: React.CSSProperties = stateStyle(next);
   let overlay: React.ReactNode = null;
 
   if (elapsed < 0) {
-    style = stateStyle(prev);
-  } else if (elapsed < leadMs) {
-    style = stateStyle(prev);
-    if (transition === "blink") {
-      const on = Math.floor(elapsed / 220) % 2 === 0;
-      style = on ? stateStyle(prev) : { background: "#111111" };
-    } else if (transition === "fade") {
-      style = {
-        ...stateStyle(prev),
-        opacity: Math.max(0.2, 1 - elapsed / leadMs),
-      };
-    }
-  } else if (elapsed < blackEnd && colorChanged) {
-    style = { background: "#000000" };
+    // Waiting for stagger — keep previous solid color
+    fillStyle = stateStyle(prev);
+  } else if (colorChanged && elapsed < BLACK_MS) {
+    fillStyle = { background: "#000000" };
   } else {
-    style = stateStyle(next);
-    if (transition === "countdown" && snapshot.nextChangeAt != null) {
-      // Remaining until this device's next flip (accounts for stagger start)
-      const visibleUntil = snapshot.nextChangeAt;
-      const remainMs = visibleUntil - estNow;
-      if (remainMs > 0) {
-        const sec = Math.max(1, Math.ceil(remainMs / 1000));
-        overlay = <div className="countdown-num">{sec}</div>;
+    // Current color is showing. Effects express remaining lifetime.
+    const showStart = roundStartedAt + deviceOffset + (colorChanged ? BLACK_MS : 0);
+    const showEnd = snapshot.nextChangeAt ?? showStart + 8_000;
+    const showDur = Math.max(500, showEnd - showStart);
+    const intoShow = Math.max(0, estNow - showStart);
+    const t = Math.min(1, intoShow / showDur); // 0 at appear → 1 at end
+
+    if (transition === "fade") {
+      // Fade starts immediately: solid → thin as time runs out
+      fillStyle = {
+        ...stateStyle(next),
+        opacity: 1 - t * (1 - FADE_END_OPACITY),
+      };
+    } else if (transition === "blink") {
+      // Solid for first half; blink for second half (= remaining ≤ half)
+      if (t >= 0.5) {
+        const on = Math.floor(intoShow / BLINK_PERIOD_MS) % 2 === 0;
+        fillStyle = on ? stateStyle(next) : { background: "#000000" };
+      } else {
+        fillStyle = stateStyle(next);
       }
+    } else if (transition === "countdown" && snapshot.nextChangeAt != null) {
+      fillStyle = stateStyle(next);
+      const remainMs = snapshot.nextChangeAt - estNow;
+      if (remainMs > 0) {
+        overlay = (
+          <div className="countdown-num">{Math.max(1, Math.ceil(remainMs / 1000))}</div>
+        );
+      }
+    } else {
+      fillStyle = stateStyle(next);
     }
   }
 
   return (
-    <div className="display-root" style={style}>
+    <div className="display-root">
+      <div className="display-fill" style={fillStyle} />
       {overlay}
     </div>
   );
