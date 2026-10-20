@@ -14,7 +14,8 @@ const MAX_DISPLAYS = 12;
 /** Must match DisplayScreen local timings */
 const TRANSITION_LEAD_MS: Record<TransitionMode, number> = {
   instant: 0,
-  countdown: 3000, // 3 → 2 → 1 (1s each)
+  /** Remaining-seconds overlay on current color; no pre-switch lead */
+  countdown: 0,
   blink: 1600,
   fade: 1200,
 };
@@ -161,7 +162,15 @@ export class Room {
     this.config = { ...this.config, ...partial };
     const n = Math.max(1, this.displays.size || 1);
     this.config.allyCount = clamp(this.config.allyCount, 0, n);
-    this.config.markedCount = clamp(this.config.markedCount, 0, this.config.allyCount);
+    if (this.config.allowMarked) {
+      // 0 のままだとマークが一切出ない（2台でも「半分を含める」が効かない原因）
+      if (this.config.markedCount < 1 && this.config.allyCount > 0) {
+        this.config.markedCount = Math.max(1, Math.floor(this.config.allyCount / 2));
+      }
+      this.config.markedCount = clamp(this.config.markedCount, 1, this.config.allyCount);
+    } else {
+      this.config.markedCount = 0;
+    }
     this.config.fixedSeconds = clamp(this.config.fixedSeconds, 0.5, 60);
     this.config.randomMinSeconds = clamp(this.config.randomMinSeconds, 0.5, 60);
     this.config.randomMaxSeconds = clamp(this.config.randomMaxSeconds, 0.5, 60);

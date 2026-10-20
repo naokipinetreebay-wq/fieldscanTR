@@ -98,25 +98,46 @@ export function ControllerPanel({
                 min={1}
                 max={maxAlly}
                 value={Math.min(cfg.allyCount, maxAlly)}
-                onChange={(e) => patch({ allyCount: Number(e.target.value) })}
+                onChange={(e) => {
+                  const allyCount = Number(e.target.value);
+                  const half = Math.max(1, Math.floor(allyCount / 2));
+                  patch({
+                    allyCount,
+                    markedCount: cfg.allowMarked
+                      ? Math.min(Math.max(cfg.markedCount || half, 1), allyCount)
+                      : 0,
+                  });
+                }}
               />
             </label>
             <label className="check">
               <input
                 type="checkbox"
                 checked={cfg.allowMarked}
-                onChange={(e) => patch({ allowMarked: e.target.checked })}
+                onChange={(e) => {
+                  const allowMarked = e.target.checked;
+                  const half = Math.max(1, Math.floor(cfg.allyCount / 2));
+                  patch({
+                    allowMarked,
+                    markedCount: allowMarked ? Math.max(cfg.markedCount, half) : 0,
+                  });
+                }}
               />
-              マーク（半分）を含める
+              半分マーク（青／朱）を含める
             </label>
             {cfg.allowMarked ? (
               <label className="field">
-                <span>マーク台数: {cfg.markedCount}</span>
+                <span>
+                  半分マークにする台数: {cfg.markedCount}
+                  <small className="field-hint">
+                    味方{cfg.allyCount}台のうち、何台を左右半分表示にするか
+                  </small>
+                </span>
                 <input
                   type="range"
-                  min={0}
-                  max={cfg.allyCount}
-                  value={Math.min(cfg.markedCount, cfg.allyCount)}
+                  min={1}
+                  max={Math.max(1, cfg.allyCount)}
+                  value={Math.min(Math.max(cfg.markedCount, 1), cfg.allyCount)}
                   onChange={(e) => patch({ markedCount: Number(e.target.value) })}
                 />
               </label>
@@ -201,7 +222,7 @@ export function ControllerPanel({
             }
           >
             <option value="instant">即時</option>
-            <option value="countdown">カウントダウン</option>
+            <option value="countdown">カウントダウン（残り秒）</option>
             <option value="blink">点滅</option>
             <option value="fade">フェード</option>
             <option value="random">毎回ランダム</option>

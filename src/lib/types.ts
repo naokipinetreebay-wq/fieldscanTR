@@ -66,7 +66,8 @@ export const DEFAULT_CONFIG: RoomConfig = {
   assignMode: "allyN",
   allyCount: 1,
   allowMarked: true,
-  markedCount: 0,
+  /** 味方のうち半分マークにする台数（allowMarked 時は 1 以上推奨） */
+  markedCount: 1,
   forbidZeroAlly: true,
   timingMode: "random",
   fixedSeconds: 3,

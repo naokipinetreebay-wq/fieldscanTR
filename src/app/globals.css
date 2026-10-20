@@ -210,6 +210,15 @@ select {
 
 .field span {
   font-size: 0.92rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--muted, #666);
 }
 
 .field input[type="range"],
@@ -332,12 +341,13 @@ select {
   display: grid;
   place-items: center;
   font-family: var(--font-display);
-  font-size: 90vmin;
+  font-size: 78vmin;
   line-height: 1;
   font-weight: 800;
-  color: #1a1a1a;
-  -webkit-text-stroke: 0.018em rgba(255, 255, 255, 0.55);
-  text-shadow: 0 4px 0 rgba(255, 255, 255, 0.25);
+  /* 背景色の上に載せて「残りが多い青の方が安全」と判断しやすくする */
+  color: rgba(255, 255, 255, 0.92);
+  -webkit-text-stroke: 0.012em rgba(0, 0, 0, 0.35);
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
   pointer-events: none;
   user-select: none;
 }

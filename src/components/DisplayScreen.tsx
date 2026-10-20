@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { COLORS, DisplayState, RoomSnapshot, TransitionMode } from "@/lib/types";
 
-const COUNTDOWN_MS = 3000;
 const BLACK_MS = 280;
 
 function stateStyle(state: DisplayState): React.CSSProperties {
@@ -12,13 +11,6 @@ function stateStyle(state: DisplayState): React.CSSProperties {
   return {
     background: `linear-gradient(90deg, ${COLORS.blue} 50%, ${COLORS.vermilion} 50%)`,
   };
-}
-
-/** 3 → 2 → 1, each held for exactly 1 second */
-function digitForElapsed(elapsedMs: number): number {
-  if (elapsedMs < 1000) return 3;
-  if (elapsedMs < 2000) return 2;
-  return 1;
 }
 
 export function DisplayScreen({
@@ -39,6 +31,7 @@ export function DisplayScreen({
     transition: "instant" as TransitionMode,
     offset: 0,
   });
+  const skewRef = useRef(0);
 
   if (snapshot.roundId !== phaseRef.current.roundId) {
     phaseRef.current = {
@@ -48,6 +41,7 @@ export function DisplayScreen({
       offset: deviceOffset,
     };
   }
+  skewRef.current = snapshot.serverNow - Date.now();
 
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -83,7 +77,7 @@ export function DisplayScreen({
 
   const leadMs =
     transition === "countdown"
-      ? COUNTDOWN_MS
+      ? 0
       : transition === "blink"
         ? 1600
         : transition === "fade"
@@ -95,13 +89,11 @@ export function DisplayScreen({
   let overlay: React.ReactNode = null;
 
   if (elapsed < 0) {
-    // Stagger wait: keep previous color, no countdown yet
+    // Stagger wait: keep previous color
     style = stateStyle(prev);
   } else if (elapsed < leadMs) {
     style = stateStyle(prev);
-    if (transition === "countdown") {
-      overlay = <div className="countdown-num">{digitForElapsed(elapsed)}</div>;
-    } else if (transition === "blink") {
+    if (transition === "blink") {
       const on = Math.floor(elapsed / 220) % 2 === 0;
       style = on ? stateStyle(prev) : { background: "#111111" };
     } else if (transition === "fade") {
@@ -114,6 +106,15 @@ export function DisplayScreen({
     style = { background: "#000000" };
   } else {
     style = stateStyle(next);
+    // 表示直後から残り秒（10→9→8…）。同じ色なら数字が大きい方がまだ安全、と判断できる
+    if (transition === "countdown" && snapshot.nextChangeAt != null) {
+      const estNow = Date.now() + skewRef.current;
+      const remainMs = snapshot.nextChangeAt - estNow;
+      if (remainMs > 0) {
+        const sec = Math.max(1, Math.ceil(remainMs / 1000));
+        overlay = <div className="countdown-num">{sec}</div>;
+      }
+    }
   }
 
   return (
