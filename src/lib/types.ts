@@ -71,5 +71,5 @@ export const DEFAULT_CONFIG: RoomConfig = {
 
 export const COLORS = {
   blue: "#1E6BFF",
-  vermilion: "#E56B3A",
+  vermilion: "#993333",
 } as const;
