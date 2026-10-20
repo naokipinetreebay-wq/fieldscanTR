@@ -4,18 +4,26 @@ import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useState } from "react";
 import type { ClientMessage, RoomConfig, RoomSnapshot } from "@/lib/types";
 import { COLORS } from "@/lib/types";
+import {
+  ControllerRoleChoice,
+  type ControllerRoleMode,
+} from "@/components/ControllerRoleChoice";
 
-const STEPS = ["説明", "端末", "割当", "切替", "確認"] as const;
+const STEPS = ["説明", "役割", "端末", "割当", "切替", "確認"] as const;
 
 export function SetupWizard({
   snapshot,
   connected,
   send,
+  roleMode,
+  onRoleModeChange,
   onDone,
 }: {
   snapshot: RoomSnapshot;
   connected: boolean;
   send: (msg: ClientMessage) => void;
+  roleMode: ControllerRoleMode | null;
+  onRoleModeChange: (mode: ControllerRoleMode) => void;
   onDone: () => void;
 }) {
   const [step, setStep] = useState(0);
@@ -39,7 +47,10 @@ export function SetupWizard({
 
   const maxAlly = Math.max(1, snapshot.displays.length || targetCount || 1);
   const joined = snapshot.displays.length;
-  const canLeaveDevices = joined >= 1;
+  // If this phone is also a display, 1 is enough; otherwise need another device
+  const canLeaveDevices =
+    roleMode === "alsoDisplay" ? joined >= 1 : joined >= 1;
+  const canLeaveRole = roleMode !== null;
 
   return (
     <div className="wizard">
@@ -78,15 +89,27 @@ export function SetupWizard({
               </li>
             </ul>
             <p className="muted">
-              端末を前後左右などに置き、ボールを受ける前後で周囲を見て「フリー」を探す練習です。コーチ端末が色の切替を同期します。
+              端末を前後左右などに置き、周囲のフリーを探す練習です。コーチ端末が切替を同期します。
             </p>
           </div>
         ) : null}
 
         {step === 1 ? (
           <div className="wizard-body">
+            <h2>この端末の役割</h2>
+            <p className="muted">コントローラ専用か、色表示にも参加するかを選べます。</p>
+            <ControllerRoleChoice value={roleMode} onChange={onRoleModeChange} />
+          </div>
+        ) : null}
+
+        {step === 2 ? (
+          <div className="wizard-body">
             <h2>端末を登録する</h2>
-            <p className="muted">目標台数を決め、QRを各スマホ・タブレットで開いてください。</p>
+            <p className="muted">
+              {roleMode === "alsoDisplay"
+                ? "この端末はすでに表示対象です。追加の端末があればQRで参加させてください。"
+                : "目標台数を決め、QRを各スマホ・タブレットで開いてください。"}
+            </p>
             <label className="field">
               <span>目標台数: {targetCount}</span>
               <input
@@ -136,7 +159,7 @@ export function SetupWizard({
           </div>
         ) : null}
 
-        {step === 2 ? (
+        {step === 3 ? (
           <div className="wizard-body">
             <h2>割当パラメータ</h2>
             <label className="field">
@@ -197,7 +220,7 @@ export function SetupWizard({
           </div>
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <div className="wizard-body">
             <h2>切替と演出</h2>
             <label className="field">
@@ -270,10 +293,14 @@ export function SetupWizard({
           </div>
         ) : null}
 
-        {step === 4 ? (
+        {step === 5 ? (
           <div className="wizard-body">
             <h2>準備完了</h2>
             <ul className="summary-list">
+              <li>
+                役割:{" "}
+                {roleMode === "alsoDisplay" ? "この端末も表示対象" : "操作専用"}
+              </li>
               <li>端末 {joined} 台</li>
               <li>
                 割当:{" "}
@@ -291,7 +318,11 @@ export function SetupWizard({
               </li>
               <li>演出: {cfg.transition}</li>
             </ul>
-            <p className="muted">次の画面で開始・停止・再設定ができます。</p>
+            <p className="muted">
+              {roleMode === "alsoDisplay"
+                ? "表示中は画面下の帯からコントローラに戻れます。"
+                : "次の画面で開始・停止・再設定ができます。"}
+            </p>
           </div>
         ) : null}
       </section>
@@ -309,14 +340,20 @@ export function SetupWizard({
           <button
             type="button"
             className="btn primary"
-            disabled={step === 1 && !canLeaveDevices}
+            disabled={
+              (step === 1 && !canLeaveRole) || (step === 2 && !canLeaveDevices)
+            }
             onClick={() => setStep((s) => s + 1)}
           >
-            {step === 1 && !canLeaveDevices ? "端末を1台以上登録" : "次へ"}
+            {step === 1 && !canLeaveRole
+              ? "役割を選ぶ"
+              : step === 2 && !canLeaveDevices
+                ? "端末を1台以上登録"
+                : "次へ"}
           </button>
         ) : (
           <button type="button" className="btn primary" onClick={onDone}>
-            コントローラへ
+            はじめる
           </button>
         )}
       </footer>
