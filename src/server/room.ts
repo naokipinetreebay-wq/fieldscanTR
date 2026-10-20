@@ -11,13 +11,13 @@ import {
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const ROOM_TTL_MS = 90 * 60 * 1000;
 const MAX_DISPLAYS = 12;
+/** Must match DisplayScreen local timings */
 const TRANSITION_LEAD_MS: Record<TransitionMode, number> = {
   instant: 0,
-  countdown: 3000,
+  countdown: 3000, // 3 → 2 → 1 (1s each)
   blink: 1600,
   fade: 1200,
 };
-/** Brief black frame between previous color and new color */
 const BLACK_GAP_MS = 280;
 
 function randomCode(length = 6): string {
