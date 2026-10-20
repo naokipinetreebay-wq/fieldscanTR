@@ -14,10 +14,7 @@ function stateStyle(state: DisplayState): React.CSSProperties {
   };
 }
 
-/**
- * 3 → 2 → 1, each held for exactly 1 second (local clock).
- * elapsed 0–999 → 3, 1000–1999 → 2, 2000–2999 → 1
- */
+/** 3 → 2 → 1, each held for exactly 1 second */
 function digitForElapsed(elapsedMs: number): number {
   if (elapsedMs < 1000) return 3;
   if (elapsedMs < 2000) return 2;
@@ -34,11 +31,13 @@ export function DisplayScreen({
   const next = snapshot.primaryStates[deviceId] || "enemy";
   const prev = snapshot.previousStates?.[deviceId] ?? next;
   const colorChanged = prev !== next;
+  const deviceOffset = snapshot.deviceOffsets?.[deviceId] ?? 0;
 
   const phaseRef = useRef({
     roundId: -1,
     localStart: 0,
     transition: "instant" as TransitionMode,
+    offset: 0,
   });
 
   if (snapshot.roundId !== phaseRef.current.roundId) {
@@ -46,6 +45,7 @@ export function DisplayScreen({
       roundId: snapshot.roundId,
       localStart: Date.now(),
       transition: snapshot.transition,
+      offset: deviceOffset,
     };
   }
 
@@ -77,8 +77,9 @@ export function DisplayScreen({
     };
   }, []);
 
-  const { localStart, transition } = phaseRef.current;
-  const elapsed = Math.max(0, Date.now() - localStart);
+  const { localStart, transition, offset } = phaseRef.current;
+  // Negative elapsed = waiting for this device's staggered start
+  const elapsed = Date.now() - localStart - offset;
 
   const leadMs =
     transition === "countdown"
@@ -88,18 +89,18 @@ export function DisplayScreen({
         : transition === "fade"
           ? 1200
           : 0;
-  const blackStart = leadMs;
   const blackEnd = leadMs + (colorChanged ? BLACK_MS : 0);
 
   let style: React.CSSProperties = stateStyle(next);
   let overlay: React.ReactNode = null;
 
-  if (elapsed < leadMs) {
-    // Still on previous color + effect
+  if (elapsed < 0) {
+    // Stagger wait: keep previous color, no countdown yet
+    style = stateStyle(prev);
+  } else if (elapsed < leadMs) {
     style = stateStyle(prev);
     if (transition === "countdown") {
-      const digit = digitForElapsed(elapsed);
-      overlay = <div className="countdown-num">{digit}</div>;
+      overlay = <div className="countdown-num">{digitForElapsed(elapsed)}</div>;
     } else if (transition === "blink") {
       const on = Math.floor(elapsed / 220) % 2 === 0;
       style = on ? stateStyle(prev) : { background: "#111111" };

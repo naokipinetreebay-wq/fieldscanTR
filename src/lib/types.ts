@@ -2,6 +2,7 @@ export type DisplayState = "free" | "marked" | "enemy";
 export type TransitionMode = "instant" | "countdown" | "blink" | "fade";
 export type TimingMode = "fixed" | "random" | "manual";
 export type AssignMode = "allyN" | "fullRandom";
+export type SyncMode = "simultaneous" | "staggered";
 export type Role = "controller" | "display";
 
 export interface RoomConfig {
@@ -14,6 +15,10 @@ export interface RoomConfig {
   fixedSeconds: number;
   randomMinSeconds: number;
   randomMaxSeconds: number;
+  /** simultaneous = all devices flip together; staggered = per-device random delay */
+  syncMode: SyncMode;
+  /** Max random delay (seconds) when syncMode is staggered */
+  staggerMaxSeconds: number;
   transition: TransitionMode | "random";
   running: boolean;
 }
@@ -32,6 +37,8 @@ export interface RoomSnapshot {
   roundId: number;
   primaryStates: Record<string, DisplayState>;
   previousStates: Record<string, DisplayState>;
+  /** Per-device delay (ms) before that device starts its transition this round */
+  deviceOffsets: Record<string, number>;
   nextChangeAt: number | null;
   transition: TransitionMode;
   /** End of countdown/blink/fade on the previous color */
@@ -65,6 +72,8 @@ export const DEFAULT_CONFIG: RoomConfig = {
   fixedSeconds: 3,
   randomMinSeconds: 2,
   randomMaxSeconds: 5,
+  syncMode: "simultaneous",
+  staggerMaxSeconds: 2,
   transition: "countdown",
   running: false,
 };
