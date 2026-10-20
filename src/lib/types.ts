@@ -31,9 +31,13 @@ export interface RoomSnapshot {
   displays: DisplayInfo[];
   roundId: number;
   primaryStates: Record<string, DisplayState>;
+  previousStates: Record<string, DisplayState>;
   nextChangeAt: number | null;
   transition: TransitionMode;
+  /** End of countdown/blink/fade on the previous color */
   transitionEndsAt: number | null;
+  /** End of black gap; after this, primaryStates are shown */
+  blackEndsAt: number | null;
   serverNow: number;
 }
 
@@ -67,5 +71,5 @@ export const DEFAULT_CONFIG: RoomConfig = {
 
 export const COLORS = {
   blue: "#1E6BFF",
-  vermilion: "#E60012",
+  vermilion: "#E8917A",
 } as const;
