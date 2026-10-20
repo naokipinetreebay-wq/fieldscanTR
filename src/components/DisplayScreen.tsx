@@ -13,6 +13,12 @@ function stateStyle(state: DisplayState): React.CSSProperties {
   };
 }
 
+function leadMsFor(transition: TransitionMode): number {
+  if (transition === "blink") return 1600;
+  if (transition === "fade") return 1200;
+  return 0;
+}
+
 export function DisplayScreen({
   snapshot,
   deviceId,
@@ -25,27 +31,12 @@ export function DisplayScreen({
   const colorChanged = prev !== next;
   const deviceOffset = snapshot.deviceOffsets?.[deviceId] ?? 0;
 
-  const phaseRef = useRef({
-    roundId: -1,
-    localStart: 0,
-    transition: "instant" as TransitionMode,
-    offset: 0,
-  });
   const skewRef = useRef(0);
-
-  if (snapshot.roundId !== phaseRef.current.roundId) {
-    phaseRef.current = {
-      roundId: snapshot.roundId,
-      localStart: Date.now(),
-      transition: snapshot.transition,
-      offset: deviceOffset,
-    };
-  }
   skewRef.current = snapshot.serverNow - Date.now();
 
   const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 50);
+    const id = setInterval(() => setTick((n) => n + 1), 100);
     return () => clearInterval(id);
   }, []);
 
@@ -71,25 +62,18 @@ export function DisplayScreen({
     };
   }, []);
 
-  const { localStart, transition, offset } = phaseRef.current;
-  // Negative elapsed = waiting for this device's staggered start
-  const elapsed = Date.now() - localStart - offset;
-
-  const leadMs =
-    transition === "countdown"
-      ? 0
-      : transition === "blink"
-        ? 1600
-        : transition === "fade"
-          ? 1200
-          : 0;
+  const transition = snapshot.transition;
+  const leadMs = leadMsFor(transition);
+  const roundStartedAt = snapshot.roundStartedAt ?? snapshot.transitionEndsAt ?? Date.now();
+  const estNow = Date.now() + skewRef.current;
+  // Server-synced elapsed so reconnect mid-round does not restart the animation
+  const elapsed = estNow - roundStartedAt - deviceOffset;
   const blackEnd = leadMs + (colorChanged ? BLACK_MS : 0);
 
   let style: React.CSSProperties = stateStyle(next);
   let overlay: React.ReactNode = null;
 
   if (elapsed < 0) {
-    // Stagger wait: keep previous color
     style = stateStyle(prev);
   } else if (elapsed < leadMs) {
     style = stateStyle(prev);
@@ -106,9 +90,7 @@ export function DisplayScreen({
     style = { background: "#000000" };
   } else {
     style = stateStyle(next);
-    // 表示直後から残り秒（10→9→8…）。同じ色なら数字が大きい方がまだ安全、と判断できる
     if (transition === "countdown" && snapshot.nextChangeAt != null) {
-      const estNow = Date.now() + skewRef.current;
       const remainMs = snapshot.nextChangeAt - estNow;
       if (remainMs > 0) {
         const sec = Math.max(1, Math.ceil(remainMs / 1000));

@@ -39,6 +39,8 @@ export interface RoomSnapshot {
   previousStates: Record<string, DisplayState>;
   /** Per-device delay (ms) before that device starts its transition this round */
   deviceOffsets: Record<string, number>;
+  /** Server timestamp when this round started (for clock-synced display timing) */
+  roundStartedAt: number | null;
   nextChangeAt: number | null;
   transition: TransitionMode;
   /** End of countdown/blink/fade on the previous color */

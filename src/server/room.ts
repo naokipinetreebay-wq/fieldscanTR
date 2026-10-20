@@ -85,6 +85,7 @@ export class Room {
   blackEndsAt: number | null = null;
   previousStates: Record<string, DisplayState> = {};
   deviceOffsets: Record<string, number> = {};
+  roundStartedAt: number | null = null;
   lastActivity = Date.now();
   private timer: NodeJS.Timeout | null = null;
 
@@ -97,6 +98,10 @@ export class Room {
   }
 
   isExpired(now = Date.now()) {
+    // Keep live sessions; idle empty rooms still expire
+    if (this.config.running) return false;
+    if (this.controllers.size > 0) return false;
+    if ([...this.displays.values()].some((d) => d.socket)) return false;
     return now - this.lastActivity > ROOM_TTL_MS;
   }
 
@@ -130,11 +135,9 @@ export class Room {
       id: deviceId,
       label: label || `D${this.displays.size + 1}`,
       socket,
+      // Mid-session join waits for the next natural round (do not reset everyone)
       state: "enemy",
     });
-    if (this.config.running) {
-      this.assignRound(false);
-    }
     this.broadcast();
     return { ok: true as const };
   }
@@ -252,6 +255,7 @@ export class Room {
 
   private assignRound(fromManual: boolean) {
     this.clearTimer();
+    this.touch();
     const previous: Record<string, DisplayState> = {};
     for (const d of this.displays.values()) {
       previous[d.id] = d.state;
@@ -279,6 +283,7 @@ export class Room {
 
     const lead = TRANSITION_LEAD_MS[this.transition];
     const now = Date.now();
+    this.roundStartedAt = now;
     this.transitionEndsAt = now + lead;
     this.blackEndsAt = now + lead + BLACK_GAP_MS;
 
@@ -321,6 +326,7 @@ export class Room {
       primaryStates,
       previousStates: { ...this.previousStates },
       deviceOffsets: { ...this.deviceOffsets },
+      roundStartedAt: this.roundStartedAt,
       nextChangeAt: this.nextChangeAt,
       transition: this.transition,
       transitionEndsAt: this.transitionEndsAt,
