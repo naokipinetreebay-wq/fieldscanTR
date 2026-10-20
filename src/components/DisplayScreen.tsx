@@ -31,12 +31,18 @@ export function DisplayScreen({
   const colorChanged = prev !== next;
   const deviceOffset = snapshot.deviceOffsets?.[deviceId] ?? 0;
 
+  // Skew is sampled only when serverNow changes — otherwise estNow freezes and
+  // staggered offsets never elapse (all devices appear to flip together).
   const skewRef = useRef(0);
-  skewRef.current = snapshot.serverNow - Date.now();
+  const lastServerNowRef = useRef<number | null>(null);
+  if (lastServerNowRef.current !== snapshot.serverNow) {
+    lastServerNowRef.current = snapshot.serverNow;
+    skewRef.current = snapshot.serverNow - Date.now();
+  }
 
   const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 100);
+    const id = setInterval(() => setTick((n) => n + 1), 50);
     return () => clearInterval(id);
   }, []);
 
@@ -66,7 +72,6 @@ export function DisplayScreen({
   const leadMs = leadMsFor(transition);
   const roundStartedAt = snapshot.roundStartedAt ?? snapshot.transitionEndsAt ?? Date.now();
   const estNow = Date.now() + skewRef.current;
-  // Server-synced elapsed so reconnect mid-round does not restart the animation
   const elapsed = estNow - roundStartedAt - deviceOffset;
   const blackEnd = leadMs + (colorChanged ? BLACK_MS : 0);
 
@@ -91,7 +96,9 @@ export function DisplayScreen({
   } else {
     style = stateStyle(next);
     if (transition === "countdown" && snapshot.nextChangeAt != null) {
-      const remainMs = snapshot.nextChangeAt - estNow;
+      // Remaining until this device's next flip (accounts for stagger start)
+      const visibleUntil = snapshot.nextChangeAt;
+      const remainMs = visibleUntil - estNow;
       if (remainMs > 0) {
         const sec = Math.max(1, Math.ceil(remainMs / 1000));
         overlay = <div className="countdown-num">{sec}</div>;

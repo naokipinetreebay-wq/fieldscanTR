@@ -320,7 +320,7 @@ export function SetupWizard({
                 }
               >
                 <option value="simultaneous">いっせい（全端末同時）</option>
-                <option value="staggered">バラバラ（端末ごとに遅延）</option>
+                <option value="staggered">ランダム（端末ごとにずれる）</option>
               </select>
             </label>
             {(cfg.syncMode || "simultaneous") === "staggered" ? (
@@ -371,7 +371,7 @@ export function SetupWizard({
               <li>
                 同期:{" "}
                 {(cfg.syncMode || "simultaneous") === "staggered"
-                  ? `バラバラ（最大${cfg.staggerMaxSeconds ?? 2}秒）`
+                  ? `ランダム（最大${cfg.staggerMaxSeconds ?? 2}秒ずれ）`
                   : "いっせい"}
               </li>
             </ul>
