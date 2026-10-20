@@ -100,11 +100,10 @@ export function ControllerPanel({
                 value={Math.min(cfg.allyCount, maxAlly)}
                 onChange={(e) => {
                   const allyCount = Number(e.target.value);
-                  const maxMarked = allyCount >= 2 ? allyCount - 1 : allyCount;
                   patch({
                     allyCount,
                     markedCount: cfg.allowMarked
-                      ? Math.min(cfg.markedCount, maxMarked)
+                      ? Math.min(cfg.markedCount, allyCount)
                       : 0,
                   });
                 }}
@@ -116,13 +115,10 @@ export function ControllerPanel({
                 checked={cfg.allowMarked}
                 onChange={(e) => {
                   const allowMarked = e.target.checked;
-                  const suggested = Math.min(
-                    Math.floor(cfg.allyCount / 2),
-                    Math.max(0, cfg.allyCount - 1)
-                  );
+                  const suggested = Math.floor(cfg.allyCount / 2);
                   patch({
                     allowMarked,
-                    markedCount: allowMarked ? Math.max(suggested, 0) : 0,
+                    markedCount: allowMarked ? suggested : 0,
                   });
                 }}
               />

@@ -236,11 +236,8 @@ export class Room {
 
     let markedCount = 0;
     if (this.config.allowMarked && allyCount > 0) {
+      // 青フル0台（味方すべて半分マーク）も許容
       markedCount = clamp(this.config.markedCount, 0, allyCount);
-      // 味方2台以上なら、青フルが0台にならないようマークを1台残す
-      if (allyCount >= 2 && markedCount >= allyCount) {
-        markedCount = allyCount - 1;
-      }
     }
     const markedIds = shuffle(allies).slice(0, markedCount);
     const markedSet = new Set(markedIds);
