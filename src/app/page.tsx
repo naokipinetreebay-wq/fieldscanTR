@@ -24,15 +24,24 @@ export default function HomePage() {
   return (
     <main className="home">
       <div className="home-card">
-        <p className="eyebrow">FieldScan TR</p>
+        <p className="eyebrow">FieldScan · TRwebapp</p>
         <h1>首振りスキャン</h1>
         <p>
-          複数のスマホ・タブレットをフィールド周囲に置き、青＝フリー／朱＝敵を同期表示します。コーチ端末で台数と切替を制御できます。
+          フィールド周囲の端末を同期し、青＝フリー／朱＝敵を切り替えて首振りを鍛えます。
         </p>
-        <button type="button" className="btn primary" disabled={busy} onClick={onCreate}>
-          {busy ? "作成中…" : "ルームを作成"}
-        </button>
-        {error ? <p className="muted" style={{ marginTop: 12, color: "var(--bad)" }}>{error}</p> : null}
+        <div className="home-actions">
+          <button type="button" className="btn primary" disabled={busy} onClick={onCreate}>
+            {busy ? "作成中…" : "ルームを作成"}
+          </button>
+          <a className="btn linkish" href="https://tr.rojiura.app">
+            TRwebapp ポータルへ
+          </a>
+        </div>
+        {error ? (
+          <p className="muted" style={{ marginTop: 12, color: "var(--bad)" }}>
+            {error}
+          </p>
+        ) : null}
       </div>
     </main>
   );
