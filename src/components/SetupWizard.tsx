@@ -83,13 +83,13 @@ export function SetupWizard({
             <h2>首振りスキャンとは</h2>
             <ul className="explain-list">
               <li>
-                <strong>青</strong> … フリーの味方（パスできる）
+                <strong>緑</strong> … フリーの味方（パスできる）
               </li>
               <li>
-                <strong>半分（青＋朱）</strong> … マークされている味方
+                <strong>半分（緑＋赤）</strong> … マークされている味方
               </li>
               <li>
-                <strong>朱</strong> … 敵／スペースがない
+                <strong>赤</strong> … 敵／スペースがない
               </li>
             </ul>
             <p className="muted">
@@ -181,7 +181,7 @@ export function SetupWizard({
             {cfg.assignMode === "allyN" ? (
               <>
                 <label className="field">
-                  <span>味方台数（青系）: {cfg.allyCount}</span>
+                  <span>味方台数（緑）: {cfg.allyCount}</span>
                   <input
                     type="range"
                     min={1}
@@ -211,7 +211,7 @@ export function SetupWizard({
                       });
                     }}
                   />
-                  半分マーク（青／朱）を含める
+                  半分マーク（緑／赤）を含める
                 </label>
                 {cfg.allowMarked ? (
                   <label className="field">
@@ -219,7 +219,7 @@ export function SetupWizard({
                       半分マークにする台数: {cfg.markedCount}
                       <small className="field-hint">
                         味方{cfg.allyCount}台のうち何台を半分にするか（残り
-                        {Math.max(0, cfg.allyCount - cfg.markedCount)}台が青フル）
+                        {Math.max(0, cfg.allyCount - cfg.markedCount)}台が緑フル）
                       </small>
                     </span>
                     <input

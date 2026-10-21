@@ -27,7 +27,7 @@ export default function HomePage() {
         <p className="eyebrow">FieldScan · TRwebapp</p>
         <h1>首振りスキャン</h1>
         <p>
-          フィールド周囲の端末を同期し、青＝フリー／朱＝敵を切り替えて首振りを鍛えます。
+          フィールド周囲の端末を同期し、緑＝フリー／赤＝敵を切り替えて首振りを鍛えます。
         </p>
         <div className="home-actions">
           <button type="button" className="btn primary" disabled={busy} onClick={onCreate}>

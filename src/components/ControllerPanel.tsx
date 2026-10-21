@@ -95,7 +95,7 @@ export function ControllerPanel({
         {cfg.assignMode === "allyN" ? (
           <>
             <label className="field">
-              <span>味方台数（青系）: {cfg.allyCount}</span>
+              <span>味方台数（緑）: {cfg.allyCount}</span>
               <input
                 type="range"
                 min={1}
@@ -125,7 +125,7 @@ export function ControllerPanel({
                   });
                 }}
               />
-              半分マーク（青／朱）を含める
+              半分マーク（緑／赤）を含める
             </label>
             {cfg.allowMarked ? (
               <label className="field">
@@ -133,7 +133,7 @@ export function ControllerPanel({
                   半分マークにする台数: {cfg.markedCount}
                   <small className="field-hint">
                     味方{cfg.allyCount}台のうち何台を半分にするか（残り
-                    {Math.max(0, cfg.allyCount - cfg.markedCount)}台が青フル）
+                    {Math.max(0, cfg.allyCount - cfg.markedCount)}台が緑フル）
                   </small>
                 </span>
                 <input
@@ -268,7 +268,7 @@ export function ControllerPanel({
         ) : (
           <>
             <p className="muted">
-              いま: 青フル{" "}
+              いま: 緑フル{" "}
               {snapshot.displays.filter((d) => d.state === "free").length} / 半分{" "}
               {snapshot.displays.filter((d) => d.state === "marked").length} / 敵{" "}
               {snapshot.displays.filter((d) => d.state === "enemy").length}
@@ -299,7 +299,7 @@ export function ControllerPanel({
                     placeholder="向きラベル"
                   />
                   <span className="state-tag">
-                    {d.state === "free" ? "青" : d.state === "marked" ? "半分" : "敵"}
+                    {d.state === "free" ? "緑" : d.state === "marked" ? "半分" : "敵"}
                   </span>
                   <span className={`dot ${d.connected ? "ok" : "bad"}`} />
                 </li>

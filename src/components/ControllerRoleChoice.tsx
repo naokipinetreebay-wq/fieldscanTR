@@ -28,7 +28,7 @@ export function ControllerRoleChoice({
       >
         <span className="role-title">この端末も表示対象にする</span>
         <span className="role-desc">
-          コントローラ操作に加え、この端末も青／朱の表示に参加します（台数が1つ足ります）。
+          コントローラ操作に加え、この端末も緑／赤の表示に参加します（台数が1つ足ります）。
         </span>
       </button>
     </div>

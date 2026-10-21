@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG: RoomConfig = {
   assignMode: "allyN",
   allyCount: 2,
   allowMarked: true,
-  /** 0 = 味方はすべて青フル。上げるとその台数だけ半分マーク */
+  /** 0 = 味方はすべて緑フル。上げるとその台数だけ半分マーク */
   markedCount: 0,
   forbidZeroAlly: true,
   timingMode: "random",
@@ -81,7 +81,8 @@ export const DEFAULT_CONFIG: RoomConfig = {
   running: false,
 };
 
+/** 信号機: 緑＝進め（フリー） / 赤＝止まれ（敵） */
 export const COLORS = {
-  blue: "#1E6BFF",
-  vermilion: "#993333",
+  blue: "#00A651",
+  vermilion: "#E10600",
 } as const;
