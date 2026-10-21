@@ -138,7 +138,7 @@ export class Room {
       label: label || `D${this.displays.size + 1}`,
       socket,
       // Mid-session join waits for the next natural round (do not reset everyone)
-      state: "enemy",
+      state: "free",
     });
     this.broadcast();
     return { ok: true as const };
@@ -276,7 +276,7 @@ export class Room {
       this.pendingStates = null;
       for (const id of ids) {
         const chosen = pending?.[id];
-        const current = this.displays.get(id)?.state ?? "enemy";
+        const current = this.displays.get(id)?.state ?? "free";
         result[id] =
           chosen === "free" || chosen === "marked" || chosen === "enemy"
             ? chosen

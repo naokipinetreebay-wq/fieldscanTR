@@ -24,7 +24,7 @@ export function DisplayScreen({
   snapshot: RoomSnapshot;
   deviceId: string;
 }) {
-  const next = snapshot.primaryStates[deviceId] || "enemy";
+  const next = snapshot.primaryStates[deviceId] || "free";
   const prev = snapshot.previousStates?.[deviceId] ?? next;
   const colorChanged = prev !== next;
   const deviceOffset = snapshot.deviceOffsets?.[deviceId] ?? 0;

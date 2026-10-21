@@ -76,9 +76,16 @@ export function ControllerPanel({
             <button type="button" className="btn primary" onClick={() => send({ type: "start" })}>
               開始
             </button>
-            <button type="button" className="btn" onClick={switchNow}>
-              {cfg.timingMode === "manual" ? "切り替え" : "次へ"}
-            </button>
+            {cfg.timingMode === "manual" && !manualPick ? (
+              <button type="button" className="btn" onClick={switchNow}>
+                切り替え
+              </button>
+            ) : null}
+            {cfg.timingMode !== "manual" ? (
+              <button type="button" className="btn" onClick={switchNow}>
+                次へ
+              </button>
+            ) : null}
             <button type="button" className="btn danger" onClick={() => send({ type: "stop" })}>
               一時停止
             </button>
@@ -286,52 +293,67 @@ export function ControllerPanel({
               （設定: 味方{cfg.allyCount}
               {cfg.allowMarked ? "・半分マークはランダム" : ""}）
             </p>
-            <ul className="device-list">
-              {snapshot.displays.map((d) => (
-                <li key={d.id}>
-                  <span
-                    className="swatch"
-                    style={
-                      d.state === "free"
-                        ? { background: COLORS.blue }
-                        : d.state === "enemy"
-                          ? { background: COLORS.vermilion }
-                          : {
-                              background: `linear-gradient(90deg, ${COLORS.blue} 50%, ${COLORS.vermilion} 50%)`,
-                            }
-                    }
-                  />
-                  <input
-                    className="label-input"
-                    value={d.label}
-                    onChange={(e) =>
-                      send({ type: "setLabel", deviceId: d.id, label: e.target.value })
-                    }
-                    placeholder="向きラベル"
-                  />
-                  <span className="state-tag">
-                    {d.state === "free" ? "緑" : d.state === "marked" ? "半分" : "敵"}
-                  </span>
-                  {manualPick ? (
-                    <select
-                      className="pick-select"
-                      value={picks[d.id] ?? d.state}
-                      onChange={(e) =>
-                        setPicks((prev) => ({
-                          ...prev,
-                          [d.id]: e.target.value as DisplayState,
-                        }))
+            <ul className={`device-list${manualPick ? " picking" : ""}`}>
+              {snapshot.displays.map((d) => {
+                const chosen = picks[d.id] ?? d.state;
+                return (
+                  <li key={d.id}>
+                    <span
+                      className="swatch"
+                      style={
+                        d.state === "free"
+                          ? { background: COLORS.blue }
+                          : d.state === "enemy"
+                            ? { background: COLORS.vermilion }
+                            : {
+                                background: `linear-gradient(90deg, ${COLORS.blue} 50%, ${COLORS.vermilion} 50%)`,
+                              }
                       }
-                    >
-                      <option value="free">緑</option>
-                      <option value="marked">半分</option>
-                      <option value="enemy">赤</option>
-                    </select>
-                  ) : null}
-                  <span className={`dot ${d.connected ? "ok" : "bad"}`} />
-                </li>
-              ))}
+                    />
+                    <input
+                      className="label-input"
+                      value={d.label}
+                      onChange={(e) =>
+                        send({ type: "setLabel", deviceId: d.id, label: e.target.value })
+                      }
+                      placeholder="名前"
+                    />
+                    {manualPick ? (
+                      <div className="color-toggles" role="group" aria-label={`${d.label}の色`}>
+                        {(
+                          [
+                            ["free", "緑"],
+                            ["enemy", "赤"],
+                            ["marked", "半分"],
+                          ] as const
+                        ).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            className={`color-toggle${chosen === value ? ` on on-${value}` : ""}`}
+                            onClick={() =>
+                              setPicks((prev) => ({ ...prev, [d.id]: value }))
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="state-tag">
+                        {d.state === "free" ? "緑" : d.state === "marked" ? "半分" : "赤"}
+                      </span>
+                    )}
+                    <span className={`dot ${d.connected ? "ok" : "bad"}`} />
+                  </li>
+                );
+              })}
             </ul>
+            {manualPick ? (
+              <button type="button" className="btn primary switch-near" onClick={switchNow}>
+                切り替え
+              </button>
+            ) : null}
           </>
         )}
       </section>
