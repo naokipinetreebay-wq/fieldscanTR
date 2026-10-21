@@ -101,49 +101,19 @@ export function ControllerPanel({
                 min={1}
                 max={maxAlly}
                 value={Math.min(cfg.allyCount, maxAlly)}
-                onChange={(e) => {
-                  const allyCount = Number(e.target.value);
-                  patch({
-                    allyCount,
-                    markedCount: cfg.allowMarked
-                      ? Math.min(cfg.markedCount, allyCount)
-                      : 0,
-                  });
-                }}
+                onChange={(e) => patch({ allyCount: Number(e.target.value) })}
               />
             </label>
             <label className="check">
               <input
                 type="checkbox"
                 checked={cfg.allowMarked}
-                onChange={(e) => {
-                  const allowMarked = e.target.checked;
-                  const suggested = Math.floor(cfg.allyCount / 2);
-                  patch({
-                    allowMarked,
-                    markedCount: allowMarked ? suggested : 0,
-                  });
-                }}
+                onChange={(e) => patch({ allowMarked: e.target.checked })}
               />
-              半分マーク（緑／赤）を含める
+              半分マーク（緑／赤）をランダムに混ぜる
             </label>
             {cfg.allowMarked ? (
-              <label className="field">
-                <span>
-                  半分マークにする台数: {cfg.markedCount}
-                  <small className="field-hint">
-                    味方{cfg.allyCount}台のうち何台を半分にするか（残り
-                    {Math.max(0, cfg.allyCount - cfg.markedCount)}台が緑フル）
-                  </small>
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(0, cfg.allyCount)}
-                  value={Math.min(Math.max(cfg.markedCount, 0), cfg.allyCount)}
-                  onChange={(e) => patch({ markedCount: Number(e.target.value) })}
-                />
-              </label>
+              <p className="muted">切り替わるたびに、半分にする台数はランダムです。</p>
             ) : null}
           </>
         ) : (
@@ -273,7 +243,8 @@ export function ControllerPanel({
               {snapshot.displays.filter((d) => d.state === "marked").length} / 敵{" "}
               {snapshot.displays.filter((d) => d.state === "enemy").length}
               {"  "}
-              （設定: 味方{cfg.allyCount}・半分マーク{cfg.allowMarked ? cfg.markedCount : 0}）
+              （設定: 味方{cfg.allyCount}
+              {cfg.allowMarked ? "・半分マークはランダム" : ""}）
             </p>
             <ul className="device-list">
               {snapshot.displays.map((d) => (

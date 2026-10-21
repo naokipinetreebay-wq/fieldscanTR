@@ -187,49 +187,21 @@ export function SetupWizard({
                     min={1}
                     max={maxAlly}
                     value={Math.min(cfg.allyCount, maxAlly)}
-                    onChange={(e) => {
-                      const allyCount = Number(e.target.value);
-                      patch({
-                        allyCount,
-                        markedCount: cfg.allowMarked
-                          ? Math.min(cfg.markedCount, allyCount)
-                          : 0,
-                      });
-                    }}
+                    onChange={(e) => patch({ allyCount: Number(e.target.value) })}
                   />
                 </label>
                 <label className="check">
                   <input
                     type="checkbox"
                     checked={cfg.allowMarked}
-                    onChange={(e) => {
-                      const allowMarked = e.target.checked;
-                      const suggested = Math.floor(cfg.allyCount / 2);
-                      patch({
-                        allowMarked,
-                        markedCount: allowMarked ? suggested : 0,
-                      });
-                    }}
+                    onChange={(e) => patch({ allowMarked: e.target.checked })}
                   />
-                  半分マーク（緑／赤）を含める
+                  半分マーク（緑／赤）をランダムに混ぜる
                 </label>
                 {cfg.allowMarked ? (
-                  <label className="field">
-                    <span>
-                      半分マークにする台数: {cfg.markedCount}
-                      <small className="field-hint">
-                        味方{cfg.allyCount}台のうち何台を半分にするか（残り
-                        {Math.max(0, cfg.allyCount - cfg.markedCount)}台が緑フル）
-                      </small>
-                    </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={Math.max(0, cfg.allyCount)}
-                      value={Math.min(Math.max(cfg.markedCount, 0), cfg.allyCount)}
-                      onChange={(e) => patch({ markedCount: Number(e.target.value) })}
-                    />
-                  </label>
+                  <p className="muted">
+                    味方のうち何台を半分にするかは、切り替わるたびにランダムです（0台の回もあります）。
+                  </p>
                 ) : null}
               </>
             ) : (
@@ -358,9 +330,7 @@ export function SetupWizard({
                 割当:{" "}
                 {cfg.assignMode === "allyN"
                   ? `味方 ${cfg.allyCount} 台` +
-                    (cfg.allowMarked
-                      ? `（うち半分マーク ${cfg.markedCount} 台）`
-                      : "")
+                    (cfg.allowMarked ? "（半分マークは毎回ランダム）" : "")
                   : "完全ランダム"}
               </li>
               <li>

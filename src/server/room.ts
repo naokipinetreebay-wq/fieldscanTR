@@ -277,8 +277,8 @@ export class Room {
 
     let markedCount = 0;
     if (this.config.allowMarked && allyCount > 0) {
-      // 青フル0台（味方すべて半分マーク）も許容
-      markedCount = clamp(this.config.markedCount, 0, allyCount);
+      // 台数は指定しない。0〜味方台数のあいだで毎回ランダム
+      markedCount = Math.floor(Math.random() * (allyCount + 1));
     }
     const markedIds = shuffle(allies).slice(0, markedCount);
     const markedSet = new Set(markedIds);
