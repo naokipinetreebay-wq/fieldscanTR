@@ -233,6 +233,20 @@ export function SetupWizard({
                 <option value="manual">手動のみ</option>
               </select>
             </label>
+            {cfg.timingMode === "manual" ? (
+              <label className="field">
+                <span>手動の中身</span>
+                <select
+                  value={cfg.manualAssign || "random"}
+                  onChange={(e) =>
+                    patch({ manualAssign: e.target.value as RoomConfig["manualAssign"] })
+                  }
+                >
+                  <option value="random">ランダム表示（タイミングだけボタン）</option>
+                  <option value="pick">色を指定して切り替え</option>
+                </select>
+              </label>
+            ) : null}
             {cfg.timingMode === "fixed" ? (
               <label className="field">
                 <span>秒数: {cfg.fixedSeconds}</span>
@@ -349,7 +363,9 @@ export function SetupWizard({
                   ? `${cfg.fixedSeconds}秒固定`
                   : cfg.timingMode === "random"
                     ? `${cfg.randomMinSeconds}〜${cfg.randomMaxSeconds}秒`
-                    : "手動"}
+                    : cfg.manualAssign === "pick"
+                      ? "手動（色を指定）"
+                      : "手動（ランダム表示）"}
               </li>
               <li>演出: {cfg.transition}</li>
               <li>音: {(cfg.sound || "off") === "on" ? "あり" : "なし"}</li>

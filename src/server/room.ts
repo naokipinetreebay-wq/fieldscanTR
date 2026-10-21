@@ -89,6 +89,7 @@ export class Room {
   roundStartedAt: number | null = null;
   lastActivity = Date.now();
   private timer: NodeJS.Timeout | null = null;
+  private pendingStates: Record<string, DisplayState> | null = null;
 
   constructor(code: string) {
     this.code = code;
@@ -180,6 +181,7 @@ export class Room {
     this.config.staggerMaxSeconds = clamp(this.config.staggerMaxSeconds ?? 2, 0, 10);
     if (this.config.syncMode !== "staggered") this.config.syncMode = "simultaneous";
     if (this.config.sound !== "on") this.config.sound = "off";
+    if (this.config.manualAssign !== "pick") this.config.manualAssign = "random";
     this.touch();
     this.applyTimingModeChange(prevTiming);
     this.broadcast();
@@ -188,6 +190,12 @@ export class Room {
   start() {
     this.config.running = true;
     this.touch();
+    if (this.config.timingMode === "manual") {
+      this.clearTimer();
+      this.nextChangeAt = null;
+      this.broadcast();
+      return;
+    }
     this.assignRound(true);
   }
 
@@ -201,8 +209,12 @@ export class Room {
     this.broadcast();
   }
 
-  next() {
+  next(states?: Record<string, DisplayState>) {
     if (!this.config.running) this.config.running = true;
+    this.pendingStates =
+      this.config.timingMode === "manual" && this.config.manualAssign === "pick"
+        ? states ?? null
+        : null;
     this.touch();
     this.assignRound(true);
   }
@@ -255,6 +267,23 @@ export class Room {
     const ids = [...this.displays.keys()];
     const result: Record<string, DisplayState> = {};
     if (ids.length === 0) return result;
+
+    if (
+      this.config.timingMode === "manual" &&
+      this.config.manualAssign === "pick"
+    ) {
+      const pending = this.pendingStates;
+      this.pendingStates = null;
+      for (const id of ids) {
+        const chosen = pending?.[id];
+        const current = this.displays.get(id)?.state ?? "enemy";
+        result[id] =
+          chosen === "free" || chosen === "marked" || chosen === "enemy"
+            ? chosen
+            : current;
+      }
+      return result;
+    }
 
     if (this.config.assignMode === "fullRandom") {
       for (const id of ids) {
