@@ -20,7 +20,7 @@ export interface RoomConfig {
   /** Max random delay (seconds) when syncMode is staggered */
   staggerMaxSeconds: number;
   transition: TransitionMode | "random";
-  /** Whistle when this device's color actually changes */
+  /** Short pip when this device's color actually changes */
   sound: "off" | "on";
   running: boolean;
 }
