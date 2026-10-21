@@ -288,6 +288,16 @@ export function SetupWizard({
               </select>
             </label>
             <label className="field">
+              <span>切替音</span>
+              <select
+                value={cfg.sound || "off"}
+                onChange={(e) => patch({ sound: e.target.value as RoomConfig["sound"] })}
+              >
+                <option value="off">音なし</option>
+                <option value="on">音あり（ホイッスル）</option>
+              </select>
+            </label>
+            <label className="field">
               <span>端末どうしの切替</span>
               <select
                 value={cfg.syncMode || "simultaneous"}
@@ -342,6 +352,7 @@ export function SetupWizard({
                     : "手動"}
               </li>
               <li>演出: {cfg.transition}</li>
+              <li>音: {(cfg.sound || "off") === "on" ? "あり" : "なし"}</li>
               <li>
                 同期:{" "}
                 {(cfg.syncMode || "simultaneous") === "staggered"

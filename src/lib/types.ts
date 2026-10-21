@@ -20,6 +20,8 @@ export interface RoomConfig {
   /** Max random delay (seconds) when syncMode is staggered */
   staggerMaxSeconds: number;
   transition: TransitionMode | "random";
+  /** Whistle when this device's color actually changes */
+  sound: "off" | "on";
   running: boolean;
 }
 
@@ -78,6 +80,7 @@ export const DEFAULT_CONFIG: RoomConfig = {
   syncMode: "simultaneous",
   staggerMaxSeconds: 2,
   transition: "countdown",
+  sound: "off",
   running: false,
 };
 

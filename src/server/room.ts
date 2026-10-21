@@ -179,6 +179,7 @@ export class Room {
     this.config.randomMaxSeconds = clamp(this.config.randomMaxSeconds, 0.5, 60);
     this.config.staggerMaxSeconds = clamp(this.config.staggerMaxSeconds ?? 2, 0, 10);
     if (this.config.syncMode !== "staggered") this.config.syncMode = "simultaneous";
+    if (this.config.sound !== "on") this.config.sound = "off";
     this.touch();
     this.applyTimingModeChange(prevTiming);
     this.broadcast();
