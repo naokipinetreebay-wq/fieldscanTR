@@ -3,6 +3,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useState } from "react";
 import type { ClientMessage, RoomConfig, RoomSnapshot } from "@/lib/types";
+import { displayJoinUrl } from "@/lib/roomCode";
 import { COLORS } from "@/lib/types";
 import {
   ControllerRoleChoice,
@@ -33,7 +34,7 @@ export function SetupWizard({
 
   const displayUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}/d/?code=${snapshot.code}`;
+    return displayJoinUrl(snapshot.code);
   }, [snapshot.code]);
 
   const patch = (partial: Partial<RoomConfig>) => {

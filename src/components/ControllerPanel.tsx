@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useMemo, useState } from "react";
 import { SessionExit } from "@/components/SessionExit";
 import type { ClientMessage, DisplayState, RoomConfig, RoomSnapshot } from "@/lib/types";
+import { displayJoinUrl } from "@/lib/roomCode";
 import { COLORS } from "@/lib/types";
 
 export function ControllerPanel({
@@ -20,7 +21,7 @@ export function ControllerPanel({
   const cfg = snapshot.config;
   const displayUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}/d/?code=${snapshot.code}`;
+    return displayJoinUrl(snapshot.code);
   }, [snapshot.code]);
 
   const patch = (partial: Partial<RoomConfig>) => {
