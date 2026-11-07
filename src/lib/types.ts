@@ -35,6 +35,21 @@ export interface DisplayInfo {
   connected: boolean;
 }
 
+/** 自動モード用。開始時に一度配り、端末時計で色切替を進める */
+export interface PlayRound {
+  roundId: number;
+  states: Record<string, DisplayState>;
+  previousStates: Record<string, DisplayState>;
+  deviceOffsets: Record<string, number>;
+  transition: TransitionMode;
+  roundStartedAt: number;
+  nextChangeAt: number;
+}
+
+export interface PlayPackage {
+  rounds: PlayRound[];
+}
+
 export interface RoomSnapshot {
   code: string;
   config: RoomConfig;
@@ -52,6 +67,8 @@ export interface RoomSnapshot {
   transitionEndsAt: number | null;
   /** End of black gap; after this, primaryStates are shown */
   blackEndsAt: number | null;
+  /** あるときは端末側再生の正本（自動モード） */
+  playPackage: PlayPackage | null;
   serverNow: number;
 }
 

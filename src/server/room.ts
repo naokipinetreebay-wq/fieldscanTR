@@ -3,11 +3,15 @@ import {
   AssignMode,
   DEFAULT_CONFIG,
   DisplayState,
+  PlayPackage,
+  PlayRound,
   RoomConfig,
   RoomSnapshot,
   TimingMode,
   TransitionMode,
 } from "../lib/types";
+
+const PACKAGE_ROUNDS = 40;
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const ROOM_TTL_MS = 90 * 60 * 1000;
@@ -87,9 +91,11 @@ export class Room {
   previousStates: Record<string, DisplayState> = {};
   deviceOffsets: Record<string, number> = {};
   roundStartedAt: number | null = null;
+  playPackage: PlayPackage | null = null;
   lastActivity = Date.now();
   private timer: NodeJS.Timeout | null = null;
   private pendingStates: Record<string, DisplayState> | null = null;
+  private packageIndex = 0;
 
   constructor(code: string) {
     this.code = code;
@@ -192,16 +198,20 @@ export class Room {
     this.touch();
     if (this.config.timingMode === "manual") {
       this.clearTimer();
+      this.playPackage = null;
+      this.packageIndex = 0;
       this.nextChangeAt = null;
       this.broadcast();
       return;
     }
-    this.assignRound(true);
+    this.beginAutoPackage();
   }
 
   stop() {
     this.config.running = false;
     this.clearTimer();
+    this.playPackage = null;
+    this.packageIndex = 0;
     this.nextChangeAt = null;
     this.transitionEndsAt = null;
     this.blackEndsAt = null;
@@ -216,7 +226,13 @@ export class Room {
         ? states ?? null
         : null;
     this.touch();
-    this.assignRound(true);
+    if (this.config.timingMode === "manual") {
+      this.playPackage = null;
+      this.packageIndex = 0;
+      this.assignRound(true);
+      return;
+    }
+    this.beginAutoPackage();
   }
 
   private clearTimer() {
@@ -232,35 +248,136 @@ export class Room {
       : 0;
   }
 
-  private armAutoTimer() {
-    this.clearTimer();
-    if (!this.config.running || this.config.timingMode === "manual") {
-      this.nextChangeAt = null;
-      return;
-    }
-    const lead = TRANSITION_LEAD_MS[this.transition];
-    const interval = nextIntervalMs(this.config);
-    const now = Date.now();
-    this.nextChangeAt =
-      now + interval + this.maxStaggerMs() + lead + BLACK_GAP_MS + 200;
-    const delay = this.nextChangeAt - Date.now();
-    this.timer = setTimeout(() => {
-      if (this.config.running && this.config.timingMode !== "manual") {
-        this.assignRound(false);
-      }
-    }, Math.max(100, delay));
-  }
-
   private applyTimingModeChange(prevTiming: TimingMode) {
     if (!this.config.running) return;
     if (this.config.timingMode === "manual") {
       this.clearTimer();
+      this.playPackage = null;
+      this.packageIndex = 0;
       this.nextChangeAt = null;
       return;
     }
-    if (prevTiming === "manual" || !this.timer) {
-      this.armAutoTimer();
+    if (prevTiming === "manual" || !this.playPackage) {
+      this.beginAutoPackage();
     }
+  }
+
+  private beginAutoPackage() {
+    this.clearTimer();
+    this.playPackage = this.buildPlayPackage(PACKAGE_ROUNDS);
+    this.packageIndex = 0;
+    this.applyPlayRound(this.playPackage.rounds[0]);
+    this.armPackageTimer();
+    this.broadcast();
+  }
+
+  private planOffsets(ids: string[]): Record<string, number> {
+    const maxStaggerMs = this.maxStaggerMs();
+    const offsets: Record<string, number> = {};
+    if (maxStaggerMs > 0 && ids.length > 1) {
+      const order = shuffle(ids);
+      for (let i = 0; i < order.length; i++) {
+        offsets[order[i]] = Math.round((i / (order.length - 1)) * maxStaggerMs);
+      }
+    } else {
+      for (const id of ids) offsets[id] = 0;
+    }
+    return offsets;
+  }
+
+  private buildPlayPackage(
+    count: number,
+    opts?: {
+      fromRoundId?: number;
+      startAt?: number;
+      previous?: Record<string, DisplayState>;
+    }
+  ): PlayPackage {
+    const ids = [...this.displays.keys()];
+    let previous: Record<string, DisplayState> = { ...(opts?.previous ?? {}) };
+    if (!opts?.previous) {
+      for (const d of this.displays.values()) previous[d.id] = d.state;
+    }
+
+    let t = opts?.startAt ?? Date.now();
+    let nextRoundId = opts?.fromRoundId ?? this.roundId + 1;
+    const rounds: PlayRound[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const states = this.assignStates();
+      for (const id of ids) {
+        if (!(id in states)) states[id] = previous[id] ?? "free";
+      }
+      const transition = pickTransition(this.config);
+      const offsets = this.planOffsets(ids);
+      const lead = TRANSITION_LEAD_MS[transition];
+      const interval = nextIntervalMs(this.config);
+      const nextChangeAt =
+        t + interval + this.maxStaggerMs() + lead + BLACK_GAP_MS + 200;
+      rounds.push({
+        roundId: nextRoundId++,
+        states,
+        previousStates: { ...previous },
+        deviceOffsets: offsets,
+        transition,
+        roundStartedAt: t,
+        nextChangeAt,
+      });
+      previous = states;
+      t = nextChangeAt;
+    }
+    return { rounds };
+  }
+
+  private applyPlayRound(round: PlayRound) {
+    this.roundId = round.roundId;
+    this.previousStates = { ...round.previousStates };
+    this.deviceOffsets = { ...round.deviceOffsets };
+    this.transition = round.transition;
+    this.roundStartedAt = round.roundStartedAt;
+    const lead = TRANSITION_LEAD_MS[round.transition];
+    this.transitionEndsAt = round.roundStartedAt + lead;
+    this.blackEndsAt = round.roundStartedAt + lead + BLACK_GAP_MS;
+    this.nextChangeAt = round.nextChangeAt;
+    for (const [id, state] of Object.entries(round.states)) {
+      const d = this.displays.get(id);
+      if (d) d.state = state;
+    }
+  }
+
+  private armPackageTimer() {
+    this.clearTimer();
+    if (!this.config.running || this.config.timingMode === "manual" || !this.playPackage) {
+      this.nextChangeAt = null;
+      return;
+    }
+    const nextIndex = this.packageIndex + 1;
+    if (nextIndex >= this.playPackage.rounds.length) {
+      const last = this.playPackage.rounds[this.playPackage.rounds.length - 1];
+      const more = this.buildPlayPackage(PACKAGE_ROUNDS, {
+        fromRoundId: last.roundId + 1,
+        startAt: last.nextChangeAt,
+        previous: last.states,
+      });
+      const kept = this.playPackage.rounds.slice(-2);
+      this.playPackage = { rounds: [...kept, ...more.rounds] };
+      this.packageIndex = Math.max(0, kept.length - 1);
+    }
+    const next = this.playPackage.rounds[this.packageIndex + 1];
+    if (!next) return;
+    const delay = next.roundStartedAt - Date.now();
+    this.timer = setTimeout(() => {
+      if (!this.config.running || this.config.timingMode === "manual" || !this.playPackage) {
+        return;
+      }
+      this.packageIndex += 1;
+      const round = this.playPackage.rounds[this.packageIndex];
+      if (!round) return;
+      this.touch();
+      this.applyPlayRound(round);
+      this.armPackageTimer();
+      this.broadcast();
+    }, Math.max(0, delay));
   }
 
   private assignStates(): Record<string, DisplayState> {
@@ -359,13 +476,7 @@ export class Room {
     this.transitionEndsAt = now + lead;
     this.blackEndsAt = now + lead + BLACK_GAP_MS;
 
-    if (this.config.timingMode === "manual") {
-      this.nextChangeAt = null;
-      this.broadcast();
-      return;
-    }
-
-    this.armAutoTimer();
+    this.nextChangeAt = null;
     this.broadcast();
     void fromManual;
   }
@@ -394,6 +505,10 @@ export class Room {
       transition: this.transition,
       transitionEndsAt: this.transitionEndsAt,
       blackEndsAt: this.blackEndsAt,
+      playPackage:
+        this.config.running && this.config.timingMode !== "manual"
+          ? this.playPackage
+          : null,
       serverNow: Date.now(),
     };
   }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { playWhistle, unlockCue } from "@/lib/cue";
+import { resolvePlayView } from "@/lib/playView";
 import { COLORS, DisplayState, RoomSnapshot } from "@/lib/types";
 
 const BLACK_MS = 280;
@@ -24,11 +25,6 @@ export function DisplayScreen({
   snapshot: RoomSnapshot;
   deviceId: string;
 }) {
-  const next = snapshot.primaryStates[deviceId] || "free";
-  const prev = snapshot.previousStates?.[deviceId] ?? next;
-  const colorChanged = prev !== next;
-  const deviceOffset = snapshot.deviceOffsets?.[deviceId] ?? 0;
-
   const skewRef = useRef(0);
   const lastServerNowRef = useRef<number | null>(null);
   if (lastServerNowRef.current !== snapshot.serverNow) {
@@ -77,20 +73,25 @@ export function DisplayScreen({
     };
   }, []);
 
-  const transition = snapshot.transition;
-  const roundStartedAt = snapshot.roundStartedAt ?? snapshot.transitionEndsAt ?? Date.now();
   const estNow = Date.now() + skewRef.current;
+  const view = resolvePlayView(snapshot, estNow);
+  const next = view.primaryStates[deviceId] || "free";
+  const prev = view.previousStates?.[deviceId] ?? next;
+  const colorChanged = prev !== next;
+  const deviceOffset = view.deviceOffsets?.[deviceId] ?? 0;
+  const transition = view.transition;
+  const roundStartedAt = view.roundStartedAt ?? Date.now();
   // Time since this device's staggered round start
   const elapsed = estNow - roundStartedAt - deviceOffset;
   const showingNext = elapsed >= 0 && !(colorChanged && elapsed < BLACK_MS);
 
   useEffect(() => {
     if (!showingNext) return;
-    if (heardRound.current === snapshot.roundId) return;
+    if (heardRound.current === view.roundId) return;
     const first = heardRound.current === null;
-    heardRound.current = snapshot.roundId;
+    heardRound.current = view.roundId;
     if (!first && soundOn && soundReady && colorChanged) playWhistle();
-  }, [colorChanged, showingNext, snapshot.roundId, soundOn, soundReady]);
+  }, [colorChanged, showingNext, view.roundId, soundOn, soundReady]);
 
   let fillStyle: React.CSSProperties = stateStyle(next);
   let overlay: React.ReactNode = null;
@@ -103,7 +104,7 @@ export function DisplayScreen({
   } else {
     // Current color is showing. Effects express remaining lifetime.
     const showStart = roundStartedAt + deviceOffset + (colorChanged ? BLACK_MS : 0);
-    const showEnd = snapshot.nextChangeAt ?? showStart + 8_000;
+    const showEnd = view.nextChangeAt ?? showStart + 8_000;
     const showDur = Math.max(500, showEnd - showStart);
     const intoShow = Math.max(0, estNow - showStart);
     const t = Math.min(1, intoShow / showDur); // 0 at appear → 1 at end
@@ -122,9 +123,9 @@ export function DisplayScreen({
       } else {
         fillStyle = stateStyle(next);
       }
-    } else if (transition === "countdown" && snapshot.nextChangeAt != null) {
+    } else if (transition === "countdown" && view.nextChangeAt != null) {
       fillStyle = stateStyle(next);
-      const remainMs = snapshot.nextChangeAt - estNow;
+      const remainMs = view.nextChangeAt - estNow;
       if (remainMs > 0) {
         overlay = (
           <div className="countdown-num">{Math.max(1, Math.ceil(remainMs / 1000))}</div>
