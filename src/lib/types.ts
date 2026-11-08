@@ -25,6 +25,8 @@ export interface RoomConfig {
   sound: "off" | "on";
   /** manual + random: button only changes timing. manual + pick: button applies chosen colors */
   manualAssign: ManualAssign;
+  /** manual 切替時に 3→2→1 してから色を変える */
+  manualPreCountdown: boolean;
   running: boolean;
 }
 
@@ -102,6 +104,7 @@ export const DEFAULT_CONFIG: RoomConfig = {
   transition: "countdown",
   sound: "off",
   manualAssign: "random",
+  manualPreCountdown: false,
   running: false,
 };
 
