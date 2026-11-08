@@ -1,9 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AdGate } from "@/components/AdGate";
-import { bootstrapSession, type TrBootstrapResponse } from "@/lib/trApi";
+import { ProfileGate } from "@/components/ProfileGate";
+import {
+  bootstrapSession,
+  isProfilePromptDone,
+  type TrBootstrapResponse,
+} from "@/lib/trApi";
 import { createRoom } from "@/lib/ws";
 
 const APP = "fieldscan";
@@ -13,6 +18,8 @@ export default function HomePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bootstrap, setBootstrap] = useState<TrBootstrapResponse | null>(null);
+  const [needProfile, setNeedProfile] = useState(false);
+  const continueAfterProfile = useRef(false);
 
   const createAndEnter = async () => {
     setBusy(true);
@@ -26,7 +33,7 @@ export default function HomePage() {
     }
   };
 
-  const onStart = async () => {
+  const runBootstrapAndCreate = async () => {
     setBusy(true);
     setError(null);
     try {
@@ -47,6 +54,29 @@ export default function HomePage() {
       setBusy(false);
     }
   };
+
+  const onStart = async () => {
+    if (!isProfilePromptDone()) {
+      continueAfterProfile.current = true;
+      setNeedProfile(true);
+      return;
+    }
+    await runBootstrapAndCreate();
+  };
+
+  if (needProfile) {
+    return (
+      <ProfileGate
+        onDone={() => {
+          setNeedProfile(false);
+          if (continueAfterProfile.current) {
+            continueAfterProfile.current = false;
+            void runBootstrapAndCreate();
+          }
+        }}
+      />
+    );
+  }
 
   if (bootstrap) {
     return (
