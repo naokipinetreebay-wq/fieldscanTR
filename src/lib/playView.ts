@@ -32,11 +32,25 @@ export function resolvePlayView(snapshot: RoomSnapshot, estNow: number): FieldPl
     };
   }
 
-  let round: PlayRound = pkg.rounds[0];
+  const first = pkg.rounds[0];
+  const last = pkg.rounds[pkg.rounds.length - 1];
+  const span = Math.max(1, last.nextChangeAt - first.roundStartedAt);
+  let t = estNow;
+  if (estNow > last.nextChangeAt) {
+    const elapsed = estNow - first.roundStartedAt;
+    t = first.roundStartedAt + (elapsed % span);
+  }
+
+  let round: PlayRound = first;
   for (const r of pkg.rounds) {
-    if (r.roundStartedAt <= estNow) round = r;
+    if (r.roundStartedAt <= t) round = r;
     else break;
   }
+
+  const loopOffset =
+    estNow > last.nextChangeAt
+      ? Math.floor((estNow - first.roundStartedAt) / span) * span
+      : 0;
 
   return {
     roundId: round.roundId,
@@ -44,8 +58,8 @@ export function resolvePlayView(snapshot: RoomSnapshot, estNow: number): FieldPl
     previousStates: round.previousStates,
     deviceOffsets: round.deviceOffsets,
     transition: round.transition,
-    roundStartedAt: round.roundStartedAt,
-    nextChangeAt: round.nextChangeAt,
+    roundStartedAt: round.roundStartedAt + loopOffset,
+    nextChangeAt: round.nextChangeAt + loopOffset,
     usingPackage: true,
   };
 }

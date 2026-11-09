@@ -15,6 +15,8 @@ export function ControllerPanel({
   clearSessionKeys,
   alsoDisplay = false,
   onStart,
+  onStop,
+  onNext,
 }: {
   snapshot: RoomSnapshot;
   connected: boolean;
@@ -24,6 +26,8 @@ export function ControllerPanel({
   alsoDisplay?: boolean;
   /** 省略時は start メッセージのみ送る */
   onStart?: () => void;
+  onStop?: () => void;
+  onNext?: (states?: Record<string, DisplayState>) => void;
 }) {
   const cfg = snapshot.config;
   const displayUrl = useMemo(() => {
@@ -43,10 +47,12 @@ export function ControllerPanel({
     if (manualPick) {
       const states: Record<string, DisplayState> = {};
       for (const d of snapshot.displays) states[d.id] = picks[d.id] ?? d.state;
-      send({ type: "next", states });
+      if (onNext) onNext(states);
+      else send({ type: "next", states });
       return;
     }
-    send({ type: "next" });
+    if (onNext) onNext();
+    else send({ type: "next" });
   };
 
   return (
@@ -101,7 +107,11 @@ export function ControllerPanel({
                 次へ
               </button>
             ) : null}
-            <button type="button" className="btn danger" onClick={() => send({ type: "stop" })}>
+            <button
+              type="button"
+              className="btn danger"
+              onClick={() => (onStop ? onStop() : send({ type: "stop" }))}
+            >
               一時停止
             </button>
           </div>
@@ -398,7 +408,7 @@ export function ControllerPanel({
       </section>
 
       <SessionExit
-        onStop={() => send({ type: "stop" })}
+        onStop={() => (onStop ? onStop() : send({ type: "stop" }))}
         clearSessionKeys={clearSessionKeys}
       />
     </div>

@@ -78,9 +78,26 @@ export type ClientMessage =
   | { type: "hello"; role: Role; deviceId: string; label?: string }
   | { type: "updateConfig"; config: Partial<RoomConfig> }
   | { type: "setLabel"; deviceId: string; label: string }
-  | { type: "start" }
+  | { type: "start"; local?: boolean }
   | { type: "stop" }
   | { type: "next"; states?: Record<string, DisplayState> }
+  | {
+      type: "hostPush";
+      overlay: {
+        playPackage?: PlayPackage | null;
+        roundId?: number;
+        primaryStates?: Record<string, DisplayState>;
+        previousStates?: Record<string, DisplayState>;
+        deviceOffsets?: Record<string, number>;
+        transition?: TransitionMode;
+        roundStartedAt?: number | null;
+        nextChangeAt?: number | null;
+        transitionEndsAt?: number | null;
+        blackEndsAt?: number | null;
+        manualCueEndsAt?: number | null;
+        hostNow?: number;
+      };
+    }
   | { type: "ping" };
 
 export type ServerMessage =
